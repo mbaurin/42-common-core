@@ -1,0 +1,66 @@
+version: "3.5"
+
+networks:
+    frontend: 
+        name: frontend_net
+    backend:
+        name: backend_net
+
+services:
+    mariadb:
+        image: mariadb
+        container_name: mariadb
+        build: ./requirements/mariadb
+        volumes:
+            -  db:/var/lib/mysql
+        networks:
+            - backend
+        restart: unless-stopped
+        env_file:
+            - ".env"
+
+    wordpress:
+        image: wordpress
+        container_name: wordpress
+        build: ./requirements/wordpress
+        volumes:
+            - wordpress:/var/www/wordpress
+        networks:
+            - frontend
+            - backend
+        depends_on:
+            - mariadb
+        restart: always
+        env_file:
+            - ".env"
+
+    nginx:
+        image: nginx
+        container_name: nginx
+        build: ./requirements/nginx
+        volumes:
+            - wordpress:/var/www/wordpress
+        networks:
+            - frontend
+        depends_on:
+            - wordpress
+        ports:
+            - "443:443"
+        restart: always
+        env_file:
+            - ".env"
+
+volumes:
+  wordpress:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/mbaurin/data/wordpress
+    
+  db:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/mbaurin/data/mariadb
